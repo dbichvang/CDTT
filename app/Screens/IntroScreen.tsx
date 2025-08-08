@@ -14,12 +14,14 @@ const { height, width } = Dimensions.get('window');
 const IntroScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
+      {/* Nửa trên */}
       <View style={styles.topSection}>
         <Image source={require('../assets/images/image3.png')} style={styles.imageLeft} />
         <Image source={require('../assets/images/Rectangle15.png')} style={styles.imageCenter} />
         <Image source={require('../assets/images/image4.png')} style={styles.imageRight} />
       </View>
 
+      {/* Nửa dưới với background hình */}
       <View style={styles.bottomSection}>
         <Image
           source={require('../assets/images/Rectangle14.png')}
@@ -34,14 +36,14 @@ const IntroScreen = ({ navigation }: any) => {
 
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => navigation.navigate('Auth')}
+            onPress={() => navigation.navigate('Auth')} // 👈 chuyển đến AuthScreen
           >
             <Text style={styles.loginText}>Sign in</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.signupButton}
-            onPress={() => navigation.navigate('Auth')}
+            onPress={() => navigation.navigate('Auth')} // 👈 chuyển đến AuthScreen
           >
             <Text style={styles.signupText}>Sign up</Text>
           </TouchableOpacity>

@@ -1,82 +1,130 @@
-import { useNavigation } from '@react-navigation/native';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import React, { useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { getAllProducts } from '../APIService';
 
 const { width } = Dimensions.get('window');
 
-const products = [
-  {
-    id: '1',
-    name: 'iPhone 11 pro',
-    price: '$199',
-    image: require('../../assets/images/11.jpg'),
-    color: '#000',
-    rating: 4.5,
-  },
-  {
-    id: '2',
-    name: 'AirPods 3rd',
-    price: '$79',
-    image: require('../../assets/images/airpod.webp'),
-    color: '#fff',
-    rating: 4.0,
-  },
-  {
-    id: '3',
-    name: 'iPhone 13',
-    price: '$512',
-    image: require('../../assets/images/13prm.jpg'),
-    color: '#888',
-    rating: 4.8,
-  },
-];
-
 const Hometab = () => {
-  const navigation = useNavigation();
-  const [savedProducts, setSavedProducts] = useState<string[]>([]); // ✅ theo dõi các sp đã lưu
+  const navigation = useNavigation<any>();
+  const [savedProducts, setSavedProducts] = useState<string[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await getAllProducts();
+        setProducts(data || []);
+      } catch (error) {
+        console.error('Lỗi tải sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  // Sắp xếp sản phẩm mới nhất theo createdAt giảm dần
+  const newProducts = products
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+  // Random sản phẩm
+  const randomProducts = products
+    .slice()
+    .sort(() => Math.random() - 0.5);
+
+  // Lọc sản phẩm có discount > 0
+  const discountedProducts = products.filter(
+    (p) => p.discount && p.discount > 0
+  );
+
+  // Chuyển sang màn Detail và truyền nguyên product
+  const handlePress = (product: any) => {
+    navigation.navigate('Details', { product });
+  };
+
+  const getImageUrl = (imageName: string) => {
+    return imageName
+      ? `http://localhost:8080/api/public/products/image/${imageName}`
+      : 'https://via.placeholder.com/170x170';
+  };
+
+  if (loading) {
+    return (
+      <View style={{ marginTop: 20 }}>
+        <ActivityIndicator size="large" color="#007bff" />
+      </View>
+    );
+  }
 
   const handleSave = async (item: any) => {
     try {
       const existingCart = await AsyncStorage.getItem('cart');
       let cart = existingCart ? JSON.parse(existingCart) : [];
-
-      cart.push(item);
+      const existingIndex = cart.findIndex((p: any) => p.productId === item.productId);
+      if (existingIndex !== -1) {
+        cart[existingIndex].quantity = (cart[existingIndex].quantity || 1) + 1;
+      } else {
+        cart.push({ ...item, quantity: 1 });
+      }
       await AsyncStorage.setItem('cart', JSON.stringify(cart));
-
-      setSavedProducts((prev) => [...prev, item.id]); // đánh dấu đã lưu
-
+      setSavedProducts((prev) => [...prev, item.productId]);
       setTimeout(() => {
-        setSavedProducts((prev) => prev.filter((id) => id !== item.id));
-      }, 3000);
+        setSavedProducts((prev) => prev.filter((id) => id !== item.productId));
+      }, 2000);
     } catch (error) {
       console.error('Error saving to cart:', error);
     }
   };
 
-  const renderProductCard = (item: any) => (
+  const renderProductCard = (item: any, idx: number) => (
     <TouchableOpacity
-      key={item.id}
+      key={item.productId || item.id || idx}
       style={styles.productCard}
-      onPress={() => (navigation as any).navigate('Details', { product: item })}
+      onPress={() => handlePress(item)}
     >
       <View style={styles.imageContainer}>
-        <Image source={item.image} style={styles.productImage} resizeMode="contain" />
+        <Image
+          source={{ uri: getImageUrl(item.image) }}
+          style={styles.productImage}
+          resizeMode="contain"
+        />
       </View>
-      <Text style={styles.productName}>{item.name}</Text>
+      <Text style={styles.productName}>{item.productName}</Text>
       <View style={styles.priceAndColorRow}>
-        <View style={[styles.colorIndicator, { backgroundColor: item.color }]} />
-        <Text style={styles.productPrice}>{item.price}</Text>
+        <View
+          style={[styles.colorIndicator, { backgroundColor: item.color || '#ccc' }]}
+        />
+        <Text style={styles.productPrice}>{item.price.toLocaleString()} ₫</Text>
       </View>
       <View style={styles.ratingRow}>
-        <Text style={styles.ratingText}>{item.rating}</Text>
+        <Text style={styles.ratingText}>{item.rating || 0}</Text>
         <Text style={styles.ratingStar}>⭐</Text>
       </View>
-
-      <TouchableOpacity style={styles.saveButton} onPress={() => handleSave(item)}>
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={() => handleSave(item)}
+      >
         <Text style={styles.saveButtonText}>Save</Text>
-        {savedProducts.includes(item.id) && (
-          <Text style={{ fontSize: 10, color: 'green', marginTop: 4 }}>✔ Đã thêm vào giỏ</Text>
+        {savedProducts.includes(item.productId) && (
+          <Text style={{ fontSize: 10, color: 'green', marginTop: 4 }}>
+            ✔ Đã thêm vào giỏ
+          </Text>
         )}
       </TouchableOpacity>
     </TouchableOpacity>
@@ -85,22 +133,26 @@ const Hometab = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.bannerContainer}>
-        <Image source={require('../../assets/images/Group2.png')} style={styles.bannerImage} resizeMode="contain" />
+        <Image
+          source={require('../../assets/images/Group2.png')}
+          style={styles.bannerImage}
+          resizeMode="contain"
+        />
       </View>
 
       <Text style={styles.sectionTitle}>New Products</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productList}>
-        {products.map(renderProductCard)}
+        {newProducts.map((item, idx) => renderProductCard(item, idx))}
       </ScrollView>
 
-      <Text style={styles.sectionTitle}>Top Products</Text>
+      <Text style={styles.sectionTitle}>All Products</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productList}>
-        {products.map(renderProductCard)}
+        {randomProducts.map((item, idx) => renderProductCard(item, idx))}
       </ScrollView>
 
-      <Text style={styles.sectionTitle}>Best Selling Products</Text>
+      <Text style={styles.sectionTitle}>Discounted Products</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.productList}>
-        {products.map(renderProductCard)}
+        {discountedProducts.map((item, idx) => renderProductCard(item, idx))}
       </ScrollView>
     </ScrollView>
   );

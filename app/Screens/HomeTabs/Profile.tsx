@@ -1,13 +1,32 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfileScreen = () => {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error('Lỗi khi load user:', error);
+      }
+    };
+    loadUser();
+  }, []);
+
   return (
     <View style={styles.container}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>H</Text>
+        <Text style={styles.avatarText}>
+          {user?.name?.[0]?.toUpperCase() || '?'}
+        </Text>
       </View>
-      <Text style={styles.name}>Heba Qaisar</Text>
+      <Text style={styles.name}>{user?.name || 'Chưa đăng nhập'}</Text>
 
       <View style={styles.options}>
         <TouchableOpacity style={styles.option}><Text>👤 Personal Information</Text></TouchableOpacity>

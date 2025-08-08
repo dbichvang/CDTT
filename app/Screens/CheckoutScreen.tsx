@@ -11,7 +11,7 @@ import React from 'react';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, CartItem } from '../types';
+import { RootStackParamList } from '../types'; // Đúng path tới types.ts
 
 type CheckoutScreenRouteProp = RouteProp<RootStackParamList, 'Checkout'>;
 type CheckoutScreenNavigationProp = NativeStackNavigationProp<
@@ -25,13 +25,13 @@ const CheckoutScreen = () => {
 
   const { cartItems } = route.params;
 
-  const total = cartItems.reduce((sum: number, item: CartItem) => {
+  const total = cartItems.reduce((sum, item) => {
     return sum + parseFloat(item.price) * item.quantity;
   }, 0);
 
   const handleOrder = () => {
     Alert.alert('Đặt hàng thành công!');
-    navigation.navigate('OrderSuccess');
+    navigation.navigate('OrderSuccess'); // ✅ không lỗi nữa
   };
 
   return (
@@ -42,11 +42,7 @@ const CheckoutScreen = () => {
       <TextInput style={styles.input} placeholder="Nhập họ và tên" />
 
       <Text style={styles.label}>Số điện thoại</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Nhập số điện thoại"
-        keyboardType="phone-pad"
-      />
+      <TextInput style={styles.input} placeholder="Nhập số điện thoại" keyboardType="phone-pad" />
 
       <Text style={styles.label}>Địa chỉ</Text>
       <TextInput style={styles.input} placeholder="Nhập địa chỉ nhận hàng" />

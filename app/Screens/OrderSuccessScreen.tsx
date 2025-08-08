@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types';
+import { RootStackParamList } from '../types'; // Đường dẫn đúng đến file chứa RootStackParamList
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'OrderSuccess'>;
 

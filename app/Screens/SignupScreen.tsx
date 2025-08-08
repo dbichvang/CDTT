@@ -1,13 +1,16 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+
 const SignupScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.form}>
         <Text style={styles.heading}>Sign Up</Text>
+
         <TextInput placeholder="Email" style={styles.input} />
         <TextInput placeholder="Username" style={styles.input} />
         <TextInput placeholder="Password" secureTextEntry style={styles.input} />
+
         <TouchableOpacity
           style={styles.signupButton}
           onPress={() => navigation.navigate('HomeScreen')}
@@ -18,7 +21,9 @@ const SignupScreen = ({ navigation }: any) => {
     </SafeAreaView>
   );
 };
+
 export default SignupScreen;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,66 +1,56 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList, CartItem } from '../../types';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type CartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Cart'>;
+type CartItem = {
+  id: number;
+  name: string;
+  price: number;
+  image: string;
+  quantity?: number;
+};
 
-const Cart = () => {
+export default function Cart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const navigation = useNavigation<CartScreenNavigationProp>();
 
+  // Load giỏ hàng
   const loadCart = async () => {
     try {
       const stored = await AsyncStorage.getItem('cart');
-      const items = stored ? JSON.parse(stored) : [];
-
-      const updatedItems = items.map((item: any) => ({
-        ...item,
-        quantity: item.quantity || 1,
-      }));
-
-      setCartItems(updatedItems);
-    } catch (error) {
-      console.error('Lỗi khi load cart:', error);
+      const parsed: CartItem[] = stored ? JSON.parse(stored) : [];
+      setCartItems(parsed);
+    } catch (err) {
+      console.error('Lỗi khi load cart:', err);
     }
   };
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', loadCart);
-    return unsubscribe;
-  }, [navigation]);
+    loadCart();
+  }, []);
 
+  // Lưu giỏ hàng
   const saveCart = async (items: CartItem[]) => {
     setCartItems(items);
     await AsyncStorage.setItem('cart', JSON.stringify(items));
   };
 
-  const handleDelete = (index: number) => {
+  // Xóa 1 sản phẩm
+  const deleteItem = (id: number) => {
     Alert.alert('Xác nhận', 'Bạn muốn xóa sản phẩm này?', [
       { text: 'Hủy', style: 'cancel' },
       {
         text: 'Xóa',
         style: 'destructive',
-        onPress: async () => {
-          const updatedCart = [...cartItems];
-          updatedCart.splice(index, 1);
-          await saveCart(updatedCart);
-        },
-      },
+        onPress: () => {
+          const updated = cartItems.filter(item => item.id !== id);
+          saveCart(updated);
+        }
+      }
     ]);
   };
 
-  const handleClearCart = () => {
+  // Xóa hết
+  const clearCart = () => {
     Alert.alert('Xác nhận', 'Bạn muốn xóa toàn bộ giỏ hàng?', [
       { text: 'Hủy', style: 'cancel' },
       {
@@ -69,51 +59,21 @@ const Cart = () => {
         onPress: async () => {
           await AsyncStorage.removeItem('cart');
           setCartItems([]);
-        },
-      },
+        }
+      }
     ]);
   };
 
-  const increaseQuantity = async (index: number) => {
-    const updatedCart = [...cartItems];
-    updatedCart[index].quantity += 1;
-    await saveCart(updatedCart);
-  };
-
-  const decreaseQuantity = async (index: number) => {
-    const updatedCart = [...cartItems];
-    if (updatedCart[index].quantity > 1) {
-      updatedCart[index].quantity -= 1;
-      await saveCart(updatedCart);
-    }
-  };
-
-  const handleBuyNow = () => {
-    navigation.navigate('Checkout', { cartItems });
-  };
-
-  const renderItem = ({ item, index }: { item: CartItem; index: number }) => (
+  const renderItem = ({ item }: { item: CartItem }) => (
     <View style={styles.itemCard}>
-      <Image source={item.image} style={styles.image} />
-      <View style={{ flex: 1, marginLeft: 10 }}>
-        <View style={styles.row}>
-          <Text style={styles.name}>{item.name}</Text>
-          <TouchableOpacity onPress={() => handleDelete(index)}>
-            <Text style={styles.deleteIcon}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.price}>{item.price}</Text>
-
-        <View style={styles.quantityRow}>
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => decreaseQuantity(index)}>
-            <Text style={styles.qtyText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.qtyNumber}>{item.quantity}</Text>
-          <TouchableOpacity style={styles.qtyBtn} onPress={() => increaseQuantity(index)}>
-            <Text style={styles.qtyText}>+</Text>
-          </TouchableOpacity>
-        </View>
+      <Image source={{ uri: item.image }} style={styles.image} />
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name}>{item.name}</Text>
+        <Text style={styles.price}>{item.price} đ</Text>
       </View>
+      <TouchableOpacity onPress={() => deleteItem(item.id)}>
+        <Text style={styles.deleteIcon}>✕</Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -121,76 +81,38 @@ const Cart = () => {
     <View style={styles.container}>
       <Text style={styles.title}>🛒 Giỏ hàng của tôi</Text>
       {cartItems.length === 0 ? (
-        <Text style={{ marginTop: 20, textAlign: 'center' }}>Giỏ hàng trống</Text>
+        <Text style={{ textAlign: 'center', marginTop: 20 }}>Giỏ hàng trống</Text>
       ) : (
         <>
           <FlatList
             data={cartItems}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
+            keyExtractor={(item) => String(item.id)}
             renderItem={renderItem}
           />
-          <TouchableOpacity style={styles.buyBtn} onPress={handleBuyNow}>
-            <Text style={styles.buyBtnText}>Buy Now</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.clearBtn} onPress={handleClearCart}>
+          <TouchableOpacity style={styles.clearBtn} onPress={clearCart}>
             <Text style={styles.clearBtnText}>🗑️ Xóa hết giỏ hàng</Text>
           </TouchableOpacity>
         </>
       )}
     </View>
   );
-};
+}
 
-export default Cart;
-
-// ⬇ styles giữ nguyên như bạn đã có
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 20 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 15,
-    marginBottom: 15,
+    alignItems: 'center',
     padding: 10,
-    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    marginBottom: 10,
+    borderRadius: 10
   },
-  image: { width: 80, height: 80, borderRadius: 10 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  image: { width: 60, height: 60, borderRadius: 8, marginRight: 10 },
   name: { fontSize: 16, fontWeight: '600' },
-  price: { fontSize: 14, color: '#f00', marginVertical: 4 },
-  deleteIcon: { fontSize: 20, color: 'red' },
-  quantityRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  qtyBtn: {
-    backgroundColor: '#ddd',
-    paddingHorizontal: 10,
-    paddingVertical: 2,
-    borderRadius: 5,
-  },
-  qtyText: { fontSize: 18, fontWeight: 'bold' },
-  qtyNumber: { fontSize: 16, marginHorizontal: 10 },
-  buyBtn: {
-    backgroundColor: '#f00',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buyBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  clearBtn: {
-    backgroundColor: '#aaa',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  clearBtnText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  price: { fontSize: 14, color: 'red' },
+  deleteIcon: { fontSize: 18, color: 'red', padding: 5 },
+  clearBtn: { backgroundColor: '#aaa', padding: 12, borderRadius: 8, alignItems: 'center', marginTop: 10 },
+  clearBtnText: { color: '#fff', fontWeight: 'bold' }
 });
