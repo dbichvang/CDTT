@@ -51,27 +51,62 @@ export default function Search() {
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchAllProducts = async () => {
       setLoadingProducts(true);
       try {
-        let endpoint = selectedCategory
-          ? `public/categories/${selectedCategory}/products?pageNumber=0&pageSize=10&sortBy=productId&sortOrder=asc`
-          : `public/products?pageNumber=0&pageSize=10&sortBy=productId&sortOrder=asc`;
-        const response = await GET_ALL(endpoint);
-        setProducts(response.data.content);
+        let allProducts: any[] = [];
+        let page = 0;
+        let hasMore = true;
+        const pageSize = 50;
+        while (hasMore) {
+          let endpoint = selectedCategory
+            ? `public/categories/${selectedCategory}/products?pageNumber=${page}&pageSize=${pageSize}&sortBy=productId&sortOrder=asc`
+            : `public/products?pageNumber=${page}&pageSize=${pageSize}&sortBy=productId&sortOrder=asc`;
+          const response = await GET_ALL(endpoint);
+          const items = response.data.content || [];
+          // Loại bỏ sản phẩm trùng lặp dựa vào productId hoặc id
+          items.forEach((item: any) => {
+            const key = item.productId || item.id;
+            if (!allProducts.some((p: any) => (p.productId || p.id) === key)) {
+              allProducts.push(item);
+            }
+          });
+          if (items.length === 0 || response.data.last === true) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        }
+        setProducts(allProducts);
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
         setLoadingProducts(false);
       }
     };
-    fetchProducts();
+    fetchAllProducts();
   }, [selectedCategory]);
 
-  // Lọc sản phẩm theo searchText
-  const filteredProducts = products.filter((product) =>
-    product.productName?.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Nếu không nhập từ khoá, hiển thị toàn bộ sản phẩm
+  // Hàm chuẩn hóa chuỗi: loại bỏ dấu, ký tự đặc biệt, khoảng trắng
+  function normalize(str: string) {
+    return str
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // loại bỏ dấu unicode tổ hợp
+      .replace(/[^a-z0-9]/g, '');
+  }
+
+  const filteredProducts = searchText.trim() === ''
+    ? products
+    : products.filter((product) => {
+        const text = normalize(searchText);
+        return (
+          (product.productName && normalize(product.productName).includes(text)) ||
+          (product.name && normalize(product.name).includes(text)) ||
+          (product.title && normalize(product.title).includes(text))
+        );
+      });
 
   if (loadingCategories) {
     return (
@@ -100,7 +135,7 @@ export default function Search() {
         selectedCategory={selectedCategory}
         onSelect={setSelectedCategory}
       />
-      {/* Product list */}
+      {/* Product list: giống All Products ở Hometab, cuộn ngang một hàng */}
       {loadingProducts ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#ff6347" />
@@ -112,9 +147,9 @@ export default function Search() {
               Không có sản phẩm nào.
             </Text>
           ) : (
-            filteredProducts.map((item) => (
+            filteredProducts.map((item, idx) => (
               <TouchableOpacity
-                key={item.productId}
+                key={item.productId ? `${item.productId}-${idx}` : `idx-${idx}`}
                 style={styles.productCard}
                 onPress={() => navigation.navigate('Details', { product: item })}
               >
