@@ -42,6 +42,10 @@ const ProfileScreen = ({ navigation }: any) => {
         <TouchableOpacity style={styles.option}>
           <Text>👤 Personal Information</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('ChangePassword')}>
+  <Text>🔑 Change Password</Text>
+</TouchableOpacity>
+
         <TouchableOpacity style={styles.option}>
           <Text>⚙️ Settings</Text>
         </TouchableOpacity>

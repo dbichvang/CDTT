@@ -1,13 +1,8 @@
 import React from "react";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Category = {
-  categoryId: number;
+  categoryId: number | null;
   categoryName: string;
 };
 
@@ -19,29 +14,33 @@ type Props = {
 
 export default function CategoryScreen({ categories, selectedCategory, onSelect }: Props) {
   const allCategories = [{ categoryId: null, categoryName: "All" }, ...categories];
-  const rows = [];
+
+  // Chia thành các hàng 4 category
+  const rows: Category[][] = [];
   for (let i = 0; i < allCategories.length; i += 4) {
     rows.push(allCategories.slice(i, i + 4));
   }
+
   return (
-    <View style={styles.gridContainer}>
+    <View style={styles.container}>
       {rows.map((row, rowIdx) => (
         <View style={styles.row} key={rowIdx}>
-          {row.map((category) => (
-            <TouchableOpacity
-              key={category.categoryId ?? 'all'}
-              style={[styles.categoryItem,
-                (selectedCategory === category.categoryId || (category.categoryId === null && selectedCategory === null)) && styles.categoryItemSelected
-              ]}
-              onPress={() => onSelect(category.categoryId)}
-            >
-              <Text style={[styles.categoryText,
-                (selectedCategory === category.categoryId || (category.categoryId === null && selectedCategory === null)) && { color: "#fff" }
-              ]}>
-                {category.categoryName}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {row.map((cat) => {
+            const isSelected =
+              selectedCategory === cat.categoryId ||
+              (cat.categoryId === null && selectedCategory === null);
+            return (
+              <TouchableOpacity
+                key={cat.categoryId ?? "all"}
+                style={[styles.item, isSelected && styles.itemSelected]}
+                onPress={() => onSelect(cat.categoryId)}
+              >
+                <Text style={[styles.text, isSelected && { color: "#fff" }]}>
+                  {cat.categoryName}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       ))}
     </View>
@@ -49,25 +48,18 @@ export default function CategoryScreen({ categories, selectedCategory, onSelect 
 }
 
 const styles = StyleSheet.create({
-  gridContainer: {
-    marginBottom: 20,
-    paddingHorizontal: 10,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 10,
-  },
-  categoryItem: {
+  container: { marginVertical: 10, paddingHorizontal: 10 },
+  row: { flexDirection: "row", justifyContent: "flex-start", marginBottom: 10 },
+  item: {
     flex: 1,
-    paddingVertical: 14,
+    minWidth: 70,
+    maxWidth: 110,
+    paddingVertical: 12,
     marginHorizontal: 5,
     borderRadius: 12,
     backgroundColor: "#f0f0f0",
     alignItems: "center",
-    minWidth: 80,
-    maxWidth: 110,
   },
-  categoryItemSelected: { backgroundColor: "#ff6347" },
-  categoryText: { fontSize: 16, color: "#333", fontWeight: "bold" },
+  itemSelected: { backgroundColor: "#ff6347" },
+  text: { fontSize: 16, fontWeight: "bold", color: "#333" },
 });
